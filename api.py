@@ -1,9 +1,11 @@
 from flask import Flask, request, jsonify, render_template
 import requests
-
+from dotenv import load_dotenv
+import os
+load_dotenv()
 app = Flask(__name__)
 
-API_KEY = "rtmUlzSNnVkGnS9V0m5XLA==jECc9tlyUBbVJBvr"  # Your API Ninjas key
+API_KEY = os.getenv("API_KEY")  # Your API Ninjas key
 API_URL = "https://api.api-ninjas.com/v1/nutrition?query={}"
 
 @app.route("/")
