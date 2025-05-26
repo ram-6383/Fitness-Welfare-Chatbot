@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>🥗 Nutrition Welfare System</title>
+  <meta charset="UTF-8" />
+  <title>🌿 Wellness Assistant</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -12,17 +12,40 @@
     }
 
     h2 {
+      text-align: center;
       color: #333;
     }
 
     #chat-box {
       width: 100%;
-      max-width: 600px;
+      max-width: 700px;
       margin: auto;
       background: white;
       padding: 20px;
       border-radius: 10px;
       box-shadow: 0px 0px 10px #ccc;
+    }
+
+    .tabs {
+      display: flex;
+      justify-content: space-around;
+      margin-bottom: 20px;
+    }
+
+    .tabs button {
+      flex: 1;
+      padding: 10px;
+      margin: 0 5px;
+      font-size: 16px;
+      background-color: #007bff;
+      border: none;
+      color: white;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .tabs button.active {
+      background-color: #0056b3;
     }
 
     .message {
@@ -67,7 +90,6 @@
       color: white;
       padding: 10px;
       font-size: 18px;
-      text-align: left;
     }
 
     .nutrition-table td {
@@ -82,15 +104,33 @@
 </head>
 <body>
   <div id="chat-box">
-    <h2>🥗 Nutrition Welfare System</h2>
+    <h2>🌿 Wellness Assistant</h2>
+
+    <div class="tabs">
+      <button class="active" onclick="switchTab('nutrition')">🥗 Nutrition</button>
+      <button onclick="switchTab('hospital')">🏥 Hospitals</button>
+      <button onclick="switchTab('exercise')">🏋️ Exercises</button>
+    </div>
+
     <div id="messages"></div>
+
     <div id="input-area">
-      <input type="text" id="symptom-input" placeholder="Enter a food item (e.g., banana)" />
+      <input type="text" id="symptom-input" placeholder="Enter food / city / muscle..." />
       <button onclick="sendMessage()">Send</button>
     </div>
   </div>
 
   <script>
+    let currentTab = 'nutrition';
+
+    function switchTab(tab) {
+      currentTab = tab;
+      document.querySelectorAll(".tabs button").forEach(btn => btn.classList.remove("active"));
+      event.target.classList.add("active");
+      document.getElementById("messages").innerHTML = '';
+      document.getElementById("symptom-input").value = '';
+    }
+
     function sendMessage() {
       const input = document.getElementById('symptom-input');
       const message = input.value.trim();
@@ -99,36 +139,55 @@
       const messagesDiv = document.getElementById('messages');
       messagesDiv.innerHTML += `<div class="message user"><strong>You:</strong> ${message}</div>`;
 
-      fetch('/chat', {
+      let endpoint = '';
+      let body = {};
+
+      if (currentTab === 'nutrition') {
+        endpoint = '/chat';
+        body = { message: message };
+      } else if (currentTab === 'hospital') {
+        endpoint = '/hospitals';
+        body = { city: message };
+      } else if (currentTab === 'exercise') {
+        endpoint = '/exercise';
+        body = { muscle: message };
+      }
+
+      fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: message })
+        body: JSON.stringify(body)
       })
-      .then(response => response.json())
+      .then(res => res.json())
       .then(data => {
         if (data.error) {
           messagesDiv.innerHTML += `<div class="message bot"><strong>Bot:</strong> ${data.error}</div>`;
-        } else {
+        } else if (currentTab === 'nutrition') {
           const tableHTML = `
             <table class="nutrition-table">
               <tr><th colspan="2">🥗 ${data.name}</th></tr>
-              <tr><td>🔥 Calories</td><td>${data.calories} kcal</td></tr>
-              <tr><td>💪 Protein</td><td>${data.protein_g} g</td></tr>
-              <tr><td>🥓 Fat</td><td>${data.fat_total_g} g (Saturated: ${data.fat_saturated_g} g)</td></tr>
-              <tr><td>🍞 Carbohydrates</td><td>${data.carbohydrates_total_g} g</td></tr>
-              <tr><td>🍬 Sugar</td><td>${data.sugar_g} g</td></tr>
-              <tr><td>🌾 Fiber</td><td>${data.fiber_g} g</td></tr>
-              <tr><td>🧂 Sodium</td><td>${data.sodium_mg} mg</td></tr>
-              <tr><td>🍌 Potassium</td><td>${data.potassium_mg} mg</td></tr>
-              <tr><td>💉 Cholesterol</td><td>${data.cholesterol_mg} mg</td></tr>
+              <tr><td>🔥 Calories</td><td>${data.calories}</td></tr>
+              <tr><td>💪 Protein</td><td>${data.protein_g}</td></tr>
+              <tr><td>🥓 Fat</td><td>${data.fat_total_g} (Saturated: ${data.fat_saturated_g})</td></tr>
+              <tr><td>🍞 Carbohydrates</td><td>${data.carbohydrates_total_g}</td></tr>
+              <tr><td>🍬 Sugar</td><td>${data.sugar_g}</td></tr>
+              <tr><td>🌾 Fiber</td><td>${data.fiber_g}</td></tr>
+              <tr><td>🧂 Sodium</td><td>${data.sodium_mg}</td></tr>
+              <tr><td>🍌 Potassium</td><td>${data.potassium_mg}</td></tr>
+              <tr><td>💉 Cholesterol</td><td>${data.cholesterol_mg}</td></tr>
             </table>
           `;
           messagesDiv.innerHTML += `<div class="message bot">${tableHTML}</div>`;
+        } else if (currentTab === 'hospital') {
+          messagesDiv.innerHTML += `<div class="message bot"><strong>Bot:</strong><br>${data.hospitals.join("<br>")}</div>`;
+        } else if (currentTab === 'exercise') {
+          messagesDiv.innerHTML += `<div class="message bot"><strong>Bot:</strong><br>${data.exercises.join("<br>")}</div>`;
         }
+
         messagesDiv.scrollTop = messagesDiv.scrollHeight;
         input.value = '';
       })
-      .catch(error => {
+      .catch(() => {
         messagesDiv.innerHTML += `<div class="message bot"><strong>Bot:</strong> ❗ Error occurred. Try again.</div>`;
         input.value = '';
       });
